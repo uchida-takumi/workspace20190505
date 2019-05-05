@@ -20,9 +20,9 @@ from src import util
 
 #############################
 # 入力をセット
-FILE_MAIN     = './data/20190426_data_analytics/20190426_main.csv'
-FILE_SUB_USER = './data/20190426_data_analytics/20190426_sub_user_status.csv'
-FILE_SUB_ITEM = './data/20190426_data_analytics/20190426_sub_news_type.csv'
+FILE_MAIN     = './data/20190504_data_analytics/main.csv'
+FILE_SUB_USER = './data/20190504_data_analytics/sub_user_status.csv'
+FILE_SUB_ITEM = './data/20190504_data_analytics/sub_news_type.csv'
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 OUTPUT_DIR = './output'
 
@@ -40,9 +40,9 @@ def main_process(now_datetime='2019-04-25 23:59:59', before_datetime='2019-04-19
     '''
     global user_info, get_uid, get_diff_days
 
-    main     = pd.read_csv(FILE_MAIN,     dtype=str)
-    sub_user = pd.read_csv(FILE_SUB_USER, dtype=str)
-    sub_item = pd.read_csv(FILE_SUB_ITEM, dtype=str)
+    main     = pd.read_csv(FILE_MAIN,     dtype=str).dropna()
+    sub_user = pd.read_csv(FILE_SUB_USER, dtype=str).dropna()
+    sub_item = pd.read_csv(FILE_SUB_ITEM, dtype=str).dropna()
 
     ui = user_info(main, sub_user, sub_item)
 
