@@ -1,0 +1,3 @@
+[submodule "src/user_item_preprocess"]
+	path = src/user_item_preprocess
+	url = https://github.com/uchida-takumi/user_item_preprocess.git
