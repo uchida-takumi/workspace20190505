@@ -29,7 +29,7 @@ def labeled_qcut(*pos_args, **key_args):
 
     '''
     qcuted = pd.qcut(*pos_args, **key_args)
-    if hasattr(qcuted, 'categories'):    
+    if hasattr(qcuted, 'categories'):
         labels = {val:'{}_{}'.format('%03d'%i, val) for i,val in enumerate(qcuted.categories)}
     else:
         labels = {val:'{}_{}'.format('%03d'%i, val) for i,val in enumerate(qcuted.dtype.categories)}
@@ -60,7 +60,7 @@ def labeled_cut(*pos_args, **key_args):
 
     '''
     cuted = pd.cut(*pos_args, **key_args)
-    if isinstance(cuted, pd.core.categorical.Categorical):
+    if hasattr(qcuted, 'categories'):
         labels = {val:'{}_{}'.format('%03d'%i, val) for i,val in enumerate(cuted.categories)}
     else:
         labels = {val:'{}_{}'.format('%03d'%i, val) for i,val in enumerate(cuted.dtype.categories)}
