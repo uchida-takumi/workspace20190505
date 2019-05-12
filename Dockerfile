@@ -10,6 +10,7 @@ ADD . .
 # RUN setting
 RUN apt-get update
 RUN apt-get -y install build-essential
+RUN apt-get -y install graphviz
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 RUN pip install ./src/user_item_preprocess

@@ -167,13 +167,13 @@ def main_process(df):
     from sklearn.ensemble import RandomForestClassifier
     forest = RandomForestClassifier(n_estimators=250, random_state=0).fit(X, y)
     importances = forest.feature_importances_
-    std = np.std([tree.feature_importances_ for tree in forest.estimators_],
+    std = np.std(np.array([tree.feature_importances_ for tree in forest.estimators_]),
                  axis=0)
-    rank = np.argsort(importances)[::-1]
+    rank_dict = {index:rank+1 for rank,index in enumerate(np.argsort(-1*importances))}
     importance_result = dict(
             importances_mean = importances,
             importances_std = std,
-            rank = rank+1,
+            rank = [rank_dict[i] for i in range(importances.size)],
             feature_name = X.columns
             )
     output_file_path = os.path.join(OUTPUT_DIR, 'feature_importance__start_free->start_paid.csv')
@@ -203,11 +203,11 @@ def main_process(df):
     importances = forest.feature_importances_
     std = np.std([tree.feature_importances_ for tree in forest.estimators_],
                  axis=0)
-    rank = np.argsort(importances)[::-1]
+    rank_dict = {index:rank+1 for rank,index in enumerate(np.argsort(-1*importances))}
     importance_result = dict(
             importances_mean = importances,
             importances_std = std,
-            rank = rank+1,
+            rank = [rank_dict[i] for i in range(importances.size)],
             feature_name = X.columns
             )
     output_file_path = os.path.join(OUTPUT_DIR, 'feature_importance__start_paid->end_paid.csv')
