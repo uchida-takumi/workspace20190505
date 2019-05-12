@@ -384,7 +384,7 @@ if __name__ == '__main__':
         n_unit = int(user_ids.size / n_data_split)
         list_user_ids = [user_ids[i*n_unit:(i+1)*n_unit] for i in range(n_data_split)]
         list_of_key_args = [{'user_ids':list(user_ids), 'now_datetime':now_datetime, 'before_datetime':before_datetime} for user_ids in list_user_ids]
-        df_list = multi(list_of_key_args, n_job)
+        df_list = multi(list_of_key_args)
         df = pd.concat(df_list, axis=0, ignore_index=True)
     except:
         import traceback
