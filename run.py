@@ -381,7 +381,7 @@ if __name__ == '__main__':
     try:
         n_job = 10
         user_ids = np.unique(main.user_id)
-        n_unit = int(user_ids.size / 3)
+        n_unit = int(user_ids.size / n_job)
         list_user_ids = [user_ids[i*n_unit:(i+1)*n_unit] for i in range(n_job)]
         list_of_key_args = [{'user_ids':list(user_ids), 'now_datetime':now_datetime, 'before_datetime':before_datetime} for user_ids in list_user_ids]
         df_list = multi(list_of_key_args)
