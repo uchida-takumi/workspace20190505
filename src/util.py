@@ -60,7 +60,7 @@ def labeled_cut(*pos_args, **key_args):
 
     '''
     cuted = pd.cut(*pos_args, **key_args)
-    if hasattr(qcuted, 'categories'):
+    if hasattr(cuted, 'categories'):
         labels = {val:'{}_{}'.format('%03d'%i, val) for i,val in enumerate(cuted.categories)}
     else:
         labels = {val:'{}_{}'.format('%03d'%i, val) for i,val in enumerate(cuted.dtype.categories)}

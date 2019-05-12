@@ -1,0 +1,32 @@
+Hellow from  /opt/conda/lib/python3.7/site-packages/user_item_preprocess/hellow.py
+処理が重い前処理部分を並列処理する。
+--- now processing at 0/2954
+--- now processing at 100/2954
+--- now processing at 200/2954
+--- now processing at 300/2954
+--- now processing at 400/2954
+--- now processing at 500/2954
+--- now processing at 600/2954
+--- now processing at 700/2954
+--- now processing at 800/2954
+--- now processing at 900/2954
+--- now processing at 1000/2954
+--- now processing at 1100/2954
+--- now processing at 1200/2954
+--- now processing at 1300/2954
+--- now processing at 1400/2954
+--- now processing at 1500/2954
+--- now processing at 1600/2954
+--- now processing at 1700/2954
+--- now processing at 1800/2954
+--- now processing at 1900/2954
+--- now processing at 2000/2954
+--- now processing at 2100/2954
+--- now processing at 2200/2954
+--- now processing at 2300/2954
+--- now processing at 2400/2954
+--- now processing at 2500/2954
+--- now processing at 2600/2954
+--- now processing at 2700/2954
+--- now processing at 2800/2954
+--- now processing at 2900/2954

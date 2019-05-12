@@ -15,6 +15,8 @@ import numpy as np
 from sklearn import tree
 import graphviz
 
+from multiprocessing import Pool
+
 import user_item_preprocess
 from src import util
 
@@ -26,7 +28,58 @@ FILE_SUB_ITEM = './data/20190504_data_analytics/sub_news_type.csv'
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 OUTPUT_DIR = './output'
 
-def main_process(now_datetime='2019-04-25 23:59:59', before_datetime='2019-04-19 00:00:00'):
+main     = pd.read_csv(FILE_MAIN,     dtype=str).dropna()
+sub_user = pd.read_csv(FILE_SUB_USER, dtype=str).dropna()
+sub_item = pd.read_csv(FILE_SUB_ITEM, dtype=str).dropna()
+
+
+now_datetime='2019-04-25 23:59:59'; before_datetime='2019-04-19 00:00:00'
+
+
+def preprocess(key_args):
+    '''
+    key_args = dict(
+        user_ids=['ed7bd5bccea3317f7fc60813a25363a2', '2af2427736eae213ba1753888b635d9b'],
+        now_datetime='2019-04-25 23:59:59',
+        before_datetime='2019-04-19 00:00:00',
+    )
+    '''
+    global main, sub_user, sub_item
+    global user_info, get_uid, get_diff_days
+    
+    user_ids        = key_args['user_ids']
+    now_datetime    = key_args['now_datetime']
+    before_datetime = key_args['before_datetime']
+    
+    _main     = main.loc[main.user_id.isin(user_ids), :]
+    _sub_user = sub_user.loc[sub_user.user_id.isin(user_ids), :]
+    _sub_item = sub_item.copy()
+    ui = user_info_class(_main, _sub_user, _sub_item)
+    result_list = []
+
+    for i,user_id in enumerate(user_ids):
+        if i % 100 == 0:
+            print('--- now processing at {}/{}'.format(i, len(user_ids)))
+        user_info = ui.get_user_info(user_id, now_datetime)
+        user_info['now_datetime'] = now_datetime
+        user_info['now_user_status'] = ui.get_user_status(user_id, now_datetime)
+        user_info['before_datetime'] = before_datetime
+        user_info['before_user_status'] = ui.get_user_status(user_id, before_datetime)
+        result_list.append(user_info)
+
+    df = pd.DataFrame(result_list)
+    return df
+
+def multi(list_of_key_args):
+    global preprocess
+    p = Pool()
+    result = p.map(preprocess, list_of_key_args)
+    p.close()
+    return result
+
+
+
+def main_process(df):
     '''
     メインプロセス。
     最終的にOUTPUT_DIRに処理済みファイルを出力する。
@@ -38,27 +91,11 @@ def main_process(now_datetime='2019-04-25 23:59:59', before_datetime='2019-04-19
     before_datetime:
         主に、user_idのstatus変化を計測するために必要。
     '''
-    global user_info, get_uid, get_diff_days
+    global now_datetime, before_datetime
+    global user_info, get_uid, get_diff_days, multi
 
-    main     = pd.read_csv(FILE_MAIN,     dtype=str).dropna()
-    sub_user = pd.read_csv(FILE_SUB_USER, dtype=str).dropna()
-    sub_item = pd.read_csv(FILE_SUB_ITEM, dtype=str).dropna()
-
-    ui = user_info(main, sub_user, sub_item)
-
-    result_list = []
-    for i,user_id in enumerate(sub_user['user_id'].unique()):
-        if i % 100 == 0:
-            print('--- now processing at {}/{}'.format(i, len(sub_user['user_id'].unique())))
-        user_info = ui.get_user_info(user_id, now_datetime)
-        user_info['now_datetime'] = now_datetime
-        user_info['now_user_status'] = ui.get_user_status(user_id, now_datetime)
-        user_info['before_datetime'] = before_datetime
-        user_info['before_user_status'] = ui.get_user_status(user_id, before_datetime)
-        result_list.append(user_info)
-
-    df = pd.DataFrame(result_list)
-
+    df['detail_past_30day_cnt'] = df['detail_free_past_30day_cnt'] + df['detail_paid_past_30day_cnt']
+    df['click_past_30day_cnt'] = df['click_free_past_30day_cnt'] + df['click_paid_past_30day_cnt']
     df['qcut_detail_past_30day_cnt'] = util.labeled_qcut(df['detail_past_30day_cnt'], q=[0.0, 0.80, 0.90, 1.])
     df['qcut_click_past_30day_cnt']  = util.labeled_qcut(df['click_past_30day_cnt'], q=[0.0, 0.80, 0.90, 1.])
 
@@ -180,17 +217,29 @@ def main_process(now_datetime='2019-04-25 23:59:59', before_datetime='2019-04-19
 
 
 
-class user_info:
+class user_info_class:
     def __init__(self, main, sub_user, sub_item):
-        self.click_uid  = get_uid(main.loc[main['event']=='click', :])
-        self.detail_uid = get_uid(main.loc[main['event']=='detail', :])
+        #self.click_uid  = get_uid(main.loc[main['event']=='click', :])
+        #self.detail_uid = get_uid(main.loc[main['event']=='detail', :])
 
         _main = main.merge(sub_item, how='left', on='news_id')
         _main['event_news_type'] = _main['event']+'_'+_main['news_type']
-        self.click_free_uid  = get_uid(_main.loc[_main['event_news_type']=='click_free', :])
-        self.click_paid_uid  = get_uid(_main.loc[_main['event_news_type']=='click_paid', :])
-        self.detail_free_uid = get_uid(_main.loc[_main['event_news_type']=='detail_free', :])
-        self.detail_paid_uid = get_uid(_main.loc[_main['event_news_type']=='detail_paid', :])
+        try:
+            self.click_free_uid  = get_uid(_main.loc[_main['event_news_type']=='click_free', :])
+        except:
+            self.click_free_uid = None
+        try:
+            self.click_paid_uid  = get_uid(_main.loc[_main['event_news_type']=='click_paid', :])
+        except:
+            self.click_paid_uid  = None
+        try:
+            self.detail_free_uid = get_uid(_main.loc[_main['event_news_type']=='detail_free', :])
+        except:
+            self.detail_free_uid = None
+        try:
+            self.detail_paid_uid = get_uid(_main.loc[_main['event_news_type']=='detail_paid', :])
+        except:
+            self.detail_paid_uid = None
 
         self.sub_user = sub_user
         self.sub_user['dt_time'] = pd.to_datetime(self.sub_user['time'],
@@ -217,27 +266,31 @@ class user_info:
               """
         '''
         user_info = dict(user_id=user_id)
+        
+        if self.click_free_uid:
+            click_free_info = self.click_free_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
+            click_free_info = {'click_free_'+key:val for key,val in click_free_info.items()}
+        else:
+            click_free_info = {}
+            
+        if self.click_paid_uid:
+            click_paid_info = self.click_paid_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
+            click_paid_info = {'click_paid_'+key:val for key,val in click_paid_info.items()}
+        else:
+            click_paid_info = {}
 
-        click_info = self.click_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
-        click_info = {'click_'+key:val for key,val in click_info.items()}
+        if self.detail_free_uid:
+            detail_free_info = self.detail_free_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
+            detail_free_info = {'detail_free_'+key:val for key,val in detail_free_info.items()}
+        else:
+            detail_free_info = {}
 
-        detail_info = self.detail_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
-        detail_info = {'detail_'+key:val for key,val in detail_info.items()}
+        if self.detail_paid_uid:
+            detail_paid_info = self.detail_paid_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
+            detail_paid_info = {'detail_paid_'+key:val for key,val in detail_paid_info.items()}
+        else:
+            detail_paid_info = {}
 
-        click_free_info = self.click_free_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
-        click_free_info = {'click_free_'+key:val for key,val in click_free_info.items()}
-
-        click_paid_info = self.click_free_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
-        click_paid_info = {'click_paid_'+key:val for key,val in click_paid_info.items()}
-
-        detail_free_info = self.click_free_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
-        detail_free_info = {'detail_free_'+key:val for key,val in detail_free_info.items()}
-
-        detail_paid_info = self.click_free_uid.get_past_cnt_by_user_datetime(user_id, datetime, diff_days)
-        detail_paid_info = {'detail_paid_'+key:val for key,val in detail_paid_info.items()}
-
-        user_info.update(click_info)
-        user_info.update(detail_info)
         user_info.update(click_free_info)
         user_info.update(click_paid_info)
         user_info.update(detail_free_info)
@@ -324,4 +377,24 @@ def get_diff_days(from_str_datetime, to_str_datetime):
 
 
 if __name__ == '__main__':
-    main_process()
+    print('処理が重い前処理部分を並列処理する。')
+    try:
+        n_job = 10
+        user_ids = np.unique(main.user_id)
+        n_unit = int(user_ids.size / 3)
+        list_user_ids = [user_ids[i*n_unit:(i+1)*n_unit] for i in range(n_job)]
+        list_of_key_args = [{'user_ids':list(user_ids), 'now_datetime':now_datetime, 'before_datetime':before_datetime} for user_ids in list_user_ids]
+        df_list = multi(list_of_key_args)
+        df = pd.concat(df_list, axis=0, ignore_index=True)
+    except:
+        import traceback
+        traceback.print_exc()
+        
+    
+    print('処理した結果をディスクに保存しておく')
+    df.to_csv('output/prepreprocessed_data.csv', index=False)
+    
+    print('決定木の図などを出力する。')
+    #df = pd.read_csv('output/prepreprocessed_data.csv')        
+    main_process(df)
+    print('finish')
