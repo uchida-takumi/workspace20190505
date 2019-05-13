@@ -32,6 +32,10 @@ main     = pd.read_csv(FILE_MAIN,     dtype=str).dropna()
 sub_user = pd.read_csv(FILE_SUB_USER, dtype=str).dropna()
 sub_item = pd.read_csv(FILE_SUB_ITEM, dtype=str).dropna()
 
+# main のデータが大きすぎる場合はユーザーを乱数抽出する。
+size = int(main['user_id'].nunique() * 0.25)
+_random_user_ids = np.random.choice(main['user_id'].unique(), size=size, replace=False)
+main = main.loc[main['user_id'].isin(_random_user_ids), :]
 
 now_datetime='2019-04-25 23:59:59'; before_datetime='2019-04-19 00:00:00'
 
@@ -55,8 +59,9 @@ def preprocess(key_args):
     _sub_user = sub_user.loc[sub_user.user_id.isin(user_ids), :]
     _sub_item = sub_item.copy()
     ui = user_info_class(_main, _sub_user, _sub_item)
-    result_list = []
+    del(_main, _sub_user, _sub_item) # メモリ効率化
 
+    result_list = []
     for i,user_id in enumerate(user_ids):
         if i % 1000 == 0:
             print('--- at {} processing vim{}/{}'.format(dt.now(), i, len(user_ids)))
@@ -67,8 +72,7 @@ def preprocess(key_args):
         user_info['before_user_status'] = ui.get_user_status(user_id, before_datetime)
         result_list.append(user_info)
 
-    df = pd.DataFrame(result_list)
-    return df
+    return pd.DataFrame(result_list)
 
 def multi(list_of_key_args, n_job=None):
     global preprocess
@@ -391,7 +395,7 @@ def get_diff_days(from_str_datetime, to_str_datetime):
 if __name__ == '__main__':
     print('処理が重い前処理部分を並列処理する。')
     try:
-        n_data_split = 2**6
+        n_data_split = 2**8
         user_ids = np.unique(main.user_id)
         n_unit = int(user_ids.size / n_data_split)
         list_user_ids = [user_ids[i*n_unit:(i+1)*n_unit] for i in range(n_data_split)]
