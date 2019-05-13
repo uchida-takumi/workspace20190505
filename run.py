@@ -58,8 +58,8 @@ def preprocess(key_args):
     result_list = []
 
     for i,user_id in enumerate(user_ids):
-        if i % 100 == 0:
-            print('--- now processing at {}/{}'.format(i, len(user_ids)))
+        if i % 1000 == 0:
+            print('--- at {} processing vim{}/{}'.format(dt.now(), i, len(user_ids)))
         user_info = ui.get_user_info(user_id, now_datetime)
         user_info['now_datetime'] = now_datetime
         user_info['now_user_status'] = ui.get_user_status(user_id, now_datetime)
@@ -96,8 +96,20 @@ def main_process(df):
 
     df['detail_past_30day_cnt'] = df['detail_free_past_30day_cnt'] + df['detail_paid_past_30day_cnt']
     df['click_past_30day_cnt'] = df['click_free_past_30day_cnt'] + df['click_paid_past_30day_cnt']
-    df['qcut_detail_past_30day_cnt'] = util.labeled_qcut(df['detail_past_30day_cnt'], q=[0.0, 0.80, 0.90, 1.])
-    df['qcut_click_past_30day_cnt']  = util.labeled_qcut(df['click_past_30day_cnt'], q=[0.0, 0.80, 0.90, 1.])
+    try:
+        _q = [0.0, 0.80, 0.90, 1.]
+        df['qcut_detail_past_30day_cnt'] = util.labeled_qcut(df['detail_past_30day_cnt'], q=_q)
+        df['qcut_click_past_30day_cnt']  = util.labeled_qcut(df['click_past_30day_cnt'], q=_q)
+    except:
+        try:
+            _q = [0.0, 0.90, 0.95, 1.]
+            df['qcut_detail_past_30day_cnt'] = util.labeled_qcut(df['detail_past_30day_cnt'], q=_q)
+            df['qcut_click_past_30day_cnt']  = util.labeled_qcut(df['click_past_30day_cnt'], q=_q)
+        except:
+            _q = [0.0, 0.95, 0.975, 1.]
+            df['qcut_detail_past_30day_cnt'] = util.labeled_qcut(df['detail_past_30day_cnt'], q=_q)
+            df['qcut_click_past_30day_cnt']  = util.labeled_qcut(df['click_past_30day_cnt'], q=_q)
+            
 
     df['cut_diff_days_from_last_start_free'] = util.labeled_cut(df['diff_days_from_last_start_free'], bins=[-0.1, 30, 90, 180, 365, np.inf])
     df['cut_diff_days_from_last_start_paid'] = util.labeled_cut(df['diff_days_from_last_start_paid'], bins=[-0.1, 30, 90, 180, 365, np.inf])
